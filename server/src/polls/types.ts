@@ -1,4 +1,5 @@
-import { Request } from '@nestjs/common';
+import { Socket } from 'socket.io';
+import { Request } from 'express';
 
 export type CreatePollFields = {
   topic: string;
@@ -40,3 +41,4 @@ type AuthPayload = {
 };
 
 export type RequestWithAuth = Request & AuthPayload;
+export type SocketWithAuth = Socket & AuthPayload;
