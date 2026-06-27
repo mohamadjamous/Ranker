@@ -1,6 +1,6 @@
 import { ArgumentsHost, BadRequestException, Catch, ExceptionFilter } from '@nestjs/common';
 import { SocketWithAuth } from 'src/polls/types';
-import { WsBadRequestException, WsUnknownException } from './ws-exceptions';
+import { WsBadRequestException, WsTypeException, WsUnknownException } from './ws-exceptions';
 
 @Catch()
 export class WsCatchAllFilter implements ExceptionFilter {
@@ -20,6 +20,13 @@ export class WsCatchAllFilter implements ExceptionFilter {
         }
 
         const msg = exception instanceof Error ? exception.message : 'Unknown error';
+
+
+        if (exception instanceof WsTypeException){
+            socket.emit('exception', exception.getError());
+            return;
+        }
+
         const wsException = new WsUnknownException(msg);
         socket.emit('exception', wsException.getError());
     }
