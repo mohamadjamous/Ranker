@@ -1,5 +1,6 @@
 import { Socket } from 'socket.io';
 import { Request } from 'express';
+import { Nomination } from 'shared';
 
 export type CreatePollFields = {
   topic: string;
@@ -19,16 +20,23 @@ export type RejoinPollFields = {
 };
 
 
-export interface AddParticipantFields {
-  pollID: string,
-  userID: string,
-  name: string,
-}
+export type AddParticipantFields = {
+  pollID: string;
+  userID: string;
+  name: string;
+};
 
-export interface RemoveParticipantData {
-  pollID: string,
-  userID: string,
-}
+export type AddNominationData = {
+  pollID: string;
+  nominationID: string;
+  nomination: Nomination;
+};
+
+export type AddNominationFields = {
+  pollID: string;
+  userID: string;
+  text: string;
+};
 
 
 // repository types
@@ -47,9 +55,9 @@ export type AddParticipantData = {
 
 
 export type AuthPayload = {
-  userID: string,
-  pollID: string,
-  name: string
+  userID: string;
+  pollID: string;
+  name: string;
 };
 
 export type RequestWithAuth = Request & AuthPayload;
