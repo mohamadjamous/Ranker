@@ -30,7 +30,7 @@ export class PollsService {
 
     const signedString = this.jwtService.sign(
       {
-        pollID: pollID,
+        pollID: createdPoll.id,
         name: fields.name
       },
       {
@@ -103,6 +103,10 @@ export class PollsService {
       )
       return updatedPoll;
     }
+  }
+
+  async getPoll(pollID: string) : Promise<Poll> {
+    return this.pollsRepository.getPoll(pollID);
   }
 
 }
