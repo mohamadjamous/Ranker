@@ -39,6 +39,12 @@ export type AddNominationFields = {
 };
 
 
+export type SubmitRankingsFields = {
+  pollID: string;
+  userID: string;
+  rankings: string[];
+};
+
 // repository types
 export type CreatePollData = {
   pollID: string;
@@ -51,6 +57,12 @@ export type AddParticipantData = {
   pollID: string;
   userID: string;
   name: string;
+};
+
+export type AddParticipantRankingsData = {
+  pollID: string;
+  userID: string;
+  rankings: string[];
 };
 
 

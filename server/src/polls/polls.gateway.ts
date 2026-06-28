@@ -2,16 +2,17 @@ import { BadRequestException, Logger, UseFilters, UseGuards, UsePipes, Validatio
 import {
     ConnectedSocket,
     MessageBody,
-    OnGatewayConnection, 
-    OnGatewayDisconnect, 
-    OnGatewayInit, 
-    SubscribeMessage, 
-    WebSocketGateway, 
+    OnGatewayConnection,
+    OnGatewayDisconnect,
+    OnGatewayInit,
+    SubscribeMessage,
+    WebSocketGateway,
     WebSocketServer,
-    WsException} from '@nestjs/websockets';
+    WsException
+} from '@nestjs/websockets';
 import { Namespace, Socket } from 'socket.io';
 import { Client } from 'socket.io/dist/client';
-import {PollsService} from './polls.service';
+import { PollsService } from './polls.service';
 import { SocketWithAuth } from './types';
 import { WsBadRequestException } from 'src/exceptions/ws-exceptions';
 import { WsCatchAllFilter } from 'src/exceptions/ws-catch-all-filter';
@@ -25,13 +26,13 @@ import { NominationDto } from './dtos';
     namespace: 'polls',
 })
 export class PollsGateway implements
- OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+    OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
 
     private readonly logger = new Logger(PollsGateway.name);
-    constructor (private readonly pollsService: PollsService) {}
+    constructor(private readonly pollsService: PollsService) { }
 
     @WebSocketServer() io: Namespace;
-    
+
     afterInit(): void {
         this.logger.log(`Websocket Gateway initialized.`);
     }
@@ -48,7 +49,7 @@ export class PollsGateway implements
         this.logger.log(`WS Client with id: ${client.id} connected!`);
         this.logger.debug(`Number of connected sockets: ${sockets.size}`);
 
-        
+
         const roomName = client.pollID;
         await client.join(roomName);
 
@@ -71,7 +72,7 @@ export class PollsGateway implements
 
         const sockets = this.io.sockets;
 
-        const {pollID, userID} = client;
+        const { pollID, userID } = client;
 
         const updatedPoll = await this.pollsService.removeParticipant(
             pollID,
@@ -87,9 +88,9 @@ export class PollsGateway implements
             Total clients connected to room: ${roomName}: ${clientCount}`);
 
 
-        if(updatedPoll){
+        if (updatedPoll) {
             this.io.to(pollID).emit('poll_updated', updatedPoll);
-        }    
+        }
     }
 
     @UseGuards(GatewayAdminGuard)
@@ -97,7 +98,7 @@ export class PollsGateway implements
     async removeParticipant(
         @MessageBody('id') id: string,
         @ConnectedSocket() client: SocketWithAuth,
-    ){
+    ) {
         this.logger.debug(
             `Attempting to remove participant ${id} from poll ${client.pollID}`,
         );
@@ -107,16 +108,16 @@ export class PollsGateway implements
             id,
         )
 
-        if(updatedPoll){
+        if (updatedPoll) {
             this.io.to(client.pollID).emit('poll_updated', updatedPoll);
-        }  
+        }
     }
 
     @SubscribeMessage('nominate')
     async nominate(
         @MessageBody() nomination: NominationDto,
         @ConnectedSocket() client: SocketWithAuth,
-    ): Promise<void>{
+    ): Promise<void> {
         this.logger.debug(
             `Attempting to add nomination for user ${client.userID} to poll ${client.pollID}\n${nomination.text}`,
         );
@@ -127,7 +128,7 @@ export class PollsGateway implements
             text: nomination.text
         });
 
-        this.io.to(client.pollID).emit('poll_updated', updatedPoll);  
+        this.io.to(client.pollID).emit('poll_updated', updatedPoll);
     }
 
     @UseGuards(GatewayAdminGuard)
@@ -135,7 +136,7 @@ export class PollsGateway implements
     async removeNomination(
         @MessageBody('id') nominationID: string,
         @ConnectedSocket() client: SocketWithAuth,
-    ){
+    ) {
         this.logger.debug(
             `Attempting to remove nomination ${nominationID} from poll ${client.pollID}`,
         );
@@ -145,9 +146,41 @@ export class PollsGateway implements
             nominationID,
         )
 
-        if(updatedPoll){
+        if (updatedPoll) {
             this.io.to(client.pollID).emit('poll_updated', updatedPoll);
-        }  
+        }
+    }
+
+
+    @UseGuards(GatewayAdminGuard)
+    @SubscribeMessage('start_vote')
+    async startVote(
+        @ConnectedSocket() client: SocketWithAuth,
+    ): Promise<void> {
+        this.logger.debug(`Attempting to start voting for poll: ${client.pollID}`);
+
+        const updatedPoll = await this.pollsService.startPoll(client.pollID);
+
+        this.io.to(client.pollID).emit('poll_updated', updatedPoll);
+    }
+
+
+    @SubscribeMessage('submit_rankings')
+    async sumbitRankings(
+        @ConnectedSocket() client: SocketWithAuth,
+        @MessageBody('rankings') rankings: string[],
+    ): Promise<void> {
+
+        this.logger.debug(`Submitting votes for user: ${client.userID} belonging to pollID: 
+            ${client.pollID}`);
+        
+        const updatedPoll = await this.pollsService.submitRankings({
+            pollID: client.pollID,
+            userID: client.userID,
+            rankings,
+        });
+
+        this.io.to(client.pollID).emit('poll_updated', updatedPoll);
     }
 
 }
