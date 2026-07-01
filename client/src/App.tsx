@@ -10,7 +10,7 @@ import { getTokenPayload } from './util';
 import SnackBar from './components/ui/SnackBar';
 
 
-devtools(state, 'app state');
+devtools(state, { name: 'app state' });
 const App: React.FC = () => {
     const currentState = useSnapshot(state);
 
@@ -47,6 +47,20 @@ const App: React.FC = () => {
         // socket initialization on server sends updated poll to the client
         actions.initializeSocket();
     }, []);
+
+    useEffect(() => {
+        console.log('App useEffect - check current participant');
+        const myID = currentState.me?.id;
+
+        if (
+            myID &&
+            currentState.socket?.connected &&
+            !currentState.poll?.participants[myID]
+        ) {
+            actions.startOver();
+        }
+    }, [currentState.poll?.participants]);
+
 
     return (
         <>
